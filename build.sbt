@@ -14,7 +14,7 @@ lazy val root = (project in file("."))
     inThisBuild(
       List(
         organization := "scalac",
-        scalaVersion := "3.2.2",
+        scalaVersion := "3.3.1",
       )
     ),
     name           := "zio-dynamo-scala3-quickstart",
