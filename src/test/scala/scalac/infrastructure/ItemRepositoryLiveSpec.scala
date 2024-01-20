@@ -7,11 +7,14 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import java.util.UUID
 import scalac.infrastructure.dynamodb._
+import scalac.config.Configuration._
 
 object ItemRepositoryLiveSpec extends ZIOSpecDefault:
 
   val containerLayer = ZLayer.scoped(DynamoDbContainer.make())
 
+  val awsConfigLayer         = DataSourceBuilderLive.awsConfigLayer
+  val dynamoDbLayer          = DataSourceBuilderLive.dynamoDbLayer
   val dataSourceBuilderLayer = DataSourceBuilderLive.dynamoDbExecutorLayer
 
   val repoLayer = ItemRepositoryLive.layer
@@ -59,7 +62,12 @@ object ItemRepositoryLiveSpec extends ZIOSpecDefault:
         assert(item.get.price)(equalTo(BigDecimal(3)))
       },
     ).provideShared(
-      containerLayer,
+      // FIXME: add DynamoDbContainer Layer
+      // containerLayer,
+      AWSConfig.layer,
+      DynamoDbConfig.layer,
+      awsConfigLayer,
+      dynamoDbLayer,
       dataSourceBuilderLayer,
       repoLayer,
     ) @@ sequential

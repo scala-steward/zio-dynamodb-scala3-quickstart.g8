@@ -6,7 +6,7 @@ val logbackClassicVersion = "1.4.7"
 val testContainersVersion = "0.40.15"
 val zioMockVersion        = "1.0.0-RC12"
 val zioHttpVersion        = "3.0.0-RC4"
-val zioDynamodb           = "1.0.0-RC1"
+val zioDynamodb           = "0.2.13"
 
 lazy val root = (project in file("."))
   .settings(

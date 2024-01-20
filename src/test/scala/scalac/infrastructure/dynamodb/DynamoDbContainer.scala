@@ -12,7 +12,7 @@ object DynamoDbContainer:
         val c = new DynaliteContainer(
           dockerImageName = DockerImageName.parse(imageName)
         )
-        // FIXME
+        // FIXME: create table on init
         // .configure { a =>
         //   a.withInitScript("item_schema.json")
         //   ()

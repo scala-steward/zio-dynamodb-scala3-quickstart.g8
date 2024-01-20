@@ -7,15 +7,3 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    volumes:
-      - ./dynamodb-data:/home/dynamodblocal/data
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
-
-  setup:
-    image: amazon/aws-cli
-    depends_on:
-      - dynamodb
-    volumes:
-      - ./dynamodb-init:/dynamodb-init
-    command: >
-      sh -c "aws dynamodb create-table --cli-input-json ./src/main/resources/init.sql --endpoint-url http://dynamodb:8000"

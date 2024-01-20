@@ -17,7 +17,7 @@ import zio.dynamodb.DynamoDBQuery
 import java.util.UUID
 
 final class ItemRepositoryLive(dynamoDbExecutor: DynamoDBExecutor) extends ItemRepository:
-  val tableName = TableName("items")
+  private val tableName = TableName("Items")
 
   override def add(item: Item): IO[RepositoryError, Unit] =
     dynamoDbExecutor
@@ -48,14 +48,6 @@ final class ItemRepositoryLive(dynamoDbExecutor: DynamoDBExecutor) extends ItemR
       .refineOrDie {
         case e => RepositoryError(e)
       }
-
-  def toItem(dynamoItem: DynamoItem): Item = {
-    val id: String        = dynamoItem.get[String]("id").fold(error => error.toString(), success => success.toString)
-    val name: String      = dynamoItem.get[String]("name").fold(error => error.toString(), success => success.toString)
-    val price: BigDecimal = dynamoItem.get[BigDecimal]("price").toOption.get
-
-    Item(ItemId(UUID.fromString(id)), name, price)
-  }
 
   override def getAll(): IO[RepositoryError, List[Item]] =
     dynamoDbExecutor
@@ -92,6 +84,14 @@ final class ItemRepositoryLive(dynamoDbExecutor: DynamoDBExecutor) extends ItemR
           case Some(_) => add(Item.withData(itemId, data)).map(Some.apply)
 
     }
+
+  private def toItem(dynamoItem: DynamoItem): Item = {
+    val id: String        = dynamoItem.get[String]("id").fold(error => error.toString(), success => success.toString)
+    val name: String      = dynamoItem.get[String]("name").fold(error => error.toString(), success => success.toString)
+    val price: BigDecimal = dynamoItem.get[BigDecimal]("price").toOption.get
+
+    Item(ItemId(UUID.fromString(id)), name, price)
+  }
 
 object ItemRepositoryLive:
 
