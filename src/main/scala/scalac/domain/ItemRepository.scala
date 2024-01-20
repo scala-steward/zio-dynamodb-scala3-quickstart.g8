@@ -4,9 +4,9 @@ import zio._
 
 trait ItemRepository:
 
-  def add(data: ItemData): IO[RepositoryError, ItemId]
+  def add(item: Item): IO[RepositoryError, Unit]
 
-  def delete(id: ItemId): IO[RepositoryError, Long]
+  def delete(id: ItemId): IO[RepositoryError, Unit]
 
   def getAll(): IO[RepositoryError, List[Item]]
 
@@ -16,10 +16,10 @@ trait ItemRepository:
 
 object ItemRepository:
 
-  def add(data: ItemData): ZIO[ItemRepository, RepositoryError, ItemId] =
-    ZIO.serviceWithZIO[ItemRepository](_.add(data))
+  def add(item: Item): ZIO[ItemRepository, RepositoryError, Unit] =
+    ZIO.serviceWithZIO[ItemRepository](_.add(item))
 
-  def delete(id: ItemId): ZIO[ItemRepository, RepositoryError, Long] =
+  def delete(id: ItemId): ZIO[ItemRepository, RepositoryError, Unit] =
     ZIO.serviceWithZIO[ItemRepository](_.delete(id))
 
   def getAll(): ZIO[ItemRepository, RepositoryError, List[Item]] =

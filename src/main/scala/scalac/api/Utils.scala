@@ -4,12 +4,13 @@ import scalac.api.Extensions._
 import scalac.domain._
 import zio._
 import zio.http._
+import java.util.UUID
 
 private[api] object Utils:
 
-  def extractLong(str: String): IO[ValidationError, Long] =
+  def extractUUID(str: String): IO[ValidationError, UUID] =
     ZIO
-      .attempt(str.toLong)
+      .attempt(UUID.fromString(str))
       .refineToOrDie[NumberFormatException]
       .mapError(err => ValidationError(err.getMessage))
 

@@ -5,8 +5,8 @@ import zio._
 import zio.mock._
 
 object ItemRepoMock extends Mock[ItemRepository]:
-  object Add     extends Effect[ItemData, Nothing, ItemId]
-  object Delete  extends Effect[ItemId, Nothing, Long]
+  object Add     extends Effect[Item, Nothing, Unit]
+  object Delete  extends Effect[ItemId, Nothing, Unit]
   object GetAll  extends Effect[Unit, Nothing, List[Item]]
   object GetById extends Effect[ItemId, Nothing, Option[Item]]
   object Update  extends Effect[(ItemId, ItemData), Nothing, Option[Unit]]
@@ -14,7 +14,7 @@ object ItemRepoMock extends Mock[ItemRepository]:
   val compose: URLayer[Proxy, ItemRepository] =
     ZLayer.fromFunction { (proxy: Proxy) =>
       new ItemRepository {
-        override def add(data: ItemData) = proxy(Add, data)
+        override def add(item: Item) = proxy(Add, item)
 
         override def delete(id: ItemId) = proxy(Delete, id)
 

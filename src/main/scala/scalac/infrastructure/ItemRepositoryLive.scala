@@ -3,92 +3,99 @@ package scalac.infrastructure
 import java.sql.SQLException
 
 import scalac.domain._
-import io.getquill._
-import io.getquill.jdbczio.Quill
 import zio.{ IO, URLayer, ZIO, ZLayer }
+import zio.aws.dynamodb.DynamoDb
+import zio.aws.dynamodb.model.PutItemRequest
+import zio.dynamodb.AttributeValue
+import zio.aws.dynamodb.model.ReturnValue
+import zio.aws.dynamodb.model.PutItemResponse
+import zio.aws.dynamodb.model.primitives.TableName
+import zio.dynamodb.{ DynamoDBExecutor, Item => DynamoItem, PrimaryKey }
+import zio.aws.dynamodb.model.primitives.AttributeName
+import zio.dynamodb.DynamoDBQuery.{ getItem, putItem, scanAllItem, deleteItem }
+import zio.dynamodb.DynamoDBQuery
+import java.util.UUID
 
-final class ItemRepositoryLive(quill: Quill.Postgres[Literal]) extends ItemRepository:
+final class ItemRepositoryLive(dynamoDbExecutor: DynamoDBExecutor) extends ItemRepository:
+  val tableName = TableName("items")
 
-  import quill.*
+  override def add(item: Item): IO[RepositoryError, Unit] =
+    dynamoDbExecutor
+      .execute(
+        putItem(
+          tableName,
+          DynamoItem(
+            "id"    -> item.id.value,
+            "name"  -> item.name,
+            "price" -> item.price,
+          ),
+        )
+      )
+      .map(_ => ())
+      .refineOrDie {
+        case e => RepositoryError(e)
+      }
 
-  inline def items = quote {
-    querySchema[Item]("items")
+  override def delete(id: ItemId): IO[RepositoryError, Unit] =
+    dynamoDbExecutor
+      .execute(
+        deleteItem(
+          tableName,
+          PrimaryKey("id" -> id.value),
+        )
+      )
+      .map(_ => ())
+      .refineOrDie {
+        case e => RepositoryError(e)
+      }
+
+  def toItem(dynamoItem: DynamoItem): Item = {
+    val id: String        = dynamoItem.get[String]("id").fold(error => error.toString(), success => success.toString)
+    val name: String      = dynamoItem.get[String]("name").fold(error => error.toString(), success => success.toString)
+    val price: BigDecimal = dynamoItem.get[BigDecimal]("price").toOption.get
+
+    Item(ItemId(UUID.fromString(id)), name, price)
   }
 
-  override def add(data: ItemData): IO[RepositoryError, ItemId] =
-    val effect: IO[SQLException, ItemId] = run {
-      quote {
-        items
-          .insertValue(lift(Item.withData(ItemId(0), data)))
-          .returningGenerated(_.id)
-      }
-    }
-
-    effect
-      .either
-      .resurrect
-      .refineOrDie {
-        case e: NullPointerException => RepositoryError(e)
-      }
-      .flatMap {
-        case Left(e: SQLException) => ZIO.fail(RepositoryError(e))
-        case Right(itemId: ItemId) => ZIO.succeed(itemId)
-      }
-
-  override def delete(id: ItemId): IO[RepositoryError, Long] =
-    val effect: IO[SQLException, Long] = run {
-      quote {
-        items.filter(i => i.id == lift(id)).delete
-      }
-    }
-
-    effect.refineOrDie {
-      case e: SQLException => RepositoryError(e)
-    }
-
   override def getAll(): IO[RepositoryError, List[Item]] =
-    val effect: IO[SQLException, List[Item]] = run {
-      quote {
-        items
+    dynamoDbExecutor
+      .execute(
+        scanAllItem(tableName)
+      )
+      .flatMap { streamOfItems =>
+        streamOfItems
+          .map(toItem)
+          .runCollect
+          .map(_.iterator.toList)
       }
-    }
-
-    effect.refineOrDie {
-      case e: SQLException => RepositoryError(e)
-    }
+      .refineOrDie {
+        case e => RepositoryError(e)
+      }
 
   override def getById(id: ItemId): IO[RepositoryError, Option[Item]] =
-    val effect: IO[SQLException, List[Item]] = run {
-      quote {
-        items.filter(_.id == lift(id))
+    dynamoDbExecutor
+      .execute(getItem(tableName, PrimaryKey("id" -> id.value)))
+      .map {
+        case Some(i) => Some(toItem(i))
+        case None    => None
       }
-    }
-
-    effect
-      .map(_.headOption)
       .refineOrDie {
-        case e: SQLException => RepositoryError(e)
+        case e => RepositoryError(e)
       }
 
   override def update(itemId: ItemId, data: ItemData): IO[RepositoryError, Option[Unit]] =
-    val effect: IO[SQLException, Long] = run {
-      quote {
-        items
-          .filter(item => item.id == lift(itemId))
-          .updateValue(lift(Item.withData(itemId, data)))
-      }
-    }
+    getById(itemId).either.flatMap {
+      case Left(repositoryError) => ZIO.fail(repositoryError)
+      case Right(maybeItem)      =>
+        maybeItem match
+          case None    => ZIO.succeed(Some(()))
+          case Some(_) => add(Item.withData(itemId, data)).map(Some.apply)
 
-    effect
-      .map(n => if (n > 0) Some(()) else None)
-      .refineOrDie {
-        case e: SQLException => RepositoryError(e)
-      }
+    }
 
 object ItemRepositoryLive:
 
-  val layer: URLayer[Quill.Postgres[Literal], ItemRepository] = ZLayer {
-    for {
-      quill <- ZIO.service[Quill.Postgres[Literal]]
-    } yield ItemRepositoryLive(quill)
-  }
+  val layer: URLayer[DynamoDBExecutor, ItemRepository] =
+    ZLayer.fromZIO(for {
+      dynamoDbExecutor <- ZIO.service[DynamoDBExecutor]
+    } yield ItemRepositoryLive(dynamoDbExecutor))

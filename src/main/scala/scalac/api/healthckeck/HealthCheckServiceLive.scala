@@ -1,31 +1,25 @@
 package scalac.api.healthcheck
 
-import io.getquill.*
-import io.getquill.Literal
-import io.getquill.jdbczio.Quill
+import zio.aws.dynamodb
+import zio.aws.dynamodb.DynamoDb
 
 import zio.*
+import zio.aws.dynamodb.model.ListTablesRequest
 
-final class HealthCheckServiceLive(quill: Quill.Postgres[Literal]) extends HealthCheckService {
+final class HealthCheckServiceLive(dynamoDb: DynamoDb)(implicit trace: zio.Trace) extends HealthCheckService {
 
-  import quill.*
-
-  override def check: UIO[DbStatus] = run {
-    quote {
-      sql"""SELECT 1""".as[Query[Int]]
-    }
-  }
-    .fold(
-      _ => DbStatus(false),
-      _ => DbStatus(true),
-    )
-
+  override def check: UIO[DbStatus] =
+    dynamoDb
+      .listTables(ListTablesRequest(None, None))
+      .runCount
+      .either
+      .map(e => DbStatus(e.isRight))
 }
 
 object HealthCheckServiceLive:
 
-  val layer: URLayer[Quill.Postgres[Literal], HealthCheckServiceLive] = ZLayer {
+  val layer: URLayer[DynamoDb, HealthCheckServiceLive] = ZLayer {
     for {
-      quill <- ZIO.service[Quill.Postgres[Literal]]
-    } yield HealthCheckServiceLive(quill)
+      dynamoDb <- ZIO.service[DynamoDb]
+    } yield HealthCheckServiceLive(dynamoDb)
   }

@@ -2,23 +2,20 @@ package scalac.infrastructure
 
 import scalac.domain._
 import zio._
+import java.util.UUID
 
 final class InMemoryItemRepository(
     random: Random,
     storeRef: Ref[Map[ItemId, ItemData]],
   ) extends ItemRepository:
 
-  override def add(data: ItemData): IO[RepositoryError, ItemId] =
-    for {
-      itemId <- random.nextLong.map(_.abs)
-      id      = ItemId(itemId)
-      _      <- storeRef.update(store => store + (id -> data))
-    } yield id
+  override def add(item: Item): IO[RepositoryError, Unit] =
+    storeRef.update(store => store + (item.id -> item.data))
 
-  override def delete(id: ItemId): IO[RepositoryError, Long] =
+  override def delete(id: ItemId): IO[RepositoryError, Unit] =
     storeRef.modify { store =>
-      if (!store.contains(id)) (0L, store)
-      else (1L, store.removed(id))
+      if (!store.contains(id)) ((), store)
+      else ((), store.removed(id))
     }
 
   override def getAll(): IO[RepositoryError, List[Item]] =

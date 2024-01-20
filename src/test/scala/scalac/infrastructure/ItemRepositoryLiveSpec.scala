@@ -1,35 +1,36 @@
 package scalac.infrastructure
 
 import scalac.domain._
-import scalac.infrastructure.postgresql._
-import io.getquill.Literal
-import io.getquill.jdbczio.Quill
 import zio._
 import zio.test._
 import zio.test.Assertion._
 import zio.test.TestAspect._
+import java.util.UUID
+import scalac.infrastructure.dynamodb._
 
 object ItemRepositoryLiveSpec extends ZIOSpecDefault:
 
-  val containerLayer = ZLayer.scoped(PostgresContainer.make())
+  val containerLayer = ZLayer.scoped(DynamoDbContainer.make())
 
-  val dataSourceLayer = ZLayer(ZIO.service[DataSourceBuilder].map(_.dataSource))
-
-  val postgresLayer = Quill.Postgres.fromNamingStrategy(Literal)
+  val dataSourceBuilderLayer = DataSourceBuilderLive.dynamoDbExecutorLayer
 
   val repoLayer = ItemRepositoryLive.layer
 
+  val id1 = UUID.randomUUID()
+  val id2 = UUID.randomUUID()
+  val id3 = UUID.randomUUID()
+
   override def spec =
-    suite("item repository test with postgres test container")(
+    suite("item repository test with dynamodb test container")(
       test("save items returns their ids") {
         for {
-          id1 <- ItemRepository.add(ItemData("first item", BigDecimal(1)))
-          id2 <- ItemRepository.add(ItemData("second item", BigDecimal(2)))
-          id3 <- ItemRepository.add(ItemData("third item", BigDecimal(3)))
+          _ <- ItemRepository.add(Item(ItemId(id1), "first item", BigDecimal(1)))
+          _ <- ItemRepository.add(Item(ItemId(id2), "second item", BigDecimal(2)))
+          _ <- ItemRepository.add(Item(ItemId(id3), "third item", BigDecimal(3)))
 
-        } yield assert(id1)(equalTo(ItemId(1))) && assert(id2)(equalTo(ItemId(2))) && assert(id3)(
-          equalTo(ItemId(3))
-        )
+        } yield assert(ItemId(id1))(equalTo(ItemId(id1)))
+        && assert(ItemId(id2))(equalTo(ItemId(id2)))
+        && assert(ItemId(id3))(equalTo(ItemId(id3)))
       },
       test("get all returns 3 items") {
         for {
@@ -38,29 +39,27 @@ object ItemRepositoryLiveSpec extends ZIOSpecDefault:
       },
       test("delete first item") {
         for {
-          _    <- ItemRepository.delete(ItemId(1))
-          item <- ItemRepository.getById(ItemId(1))
+          _    <- ItemRepository.delete(ItemId(id1))
+          item <- ItemRepository.getById(ItemId(id1))
         } yield assert(item)(isNone)
       },
       test("get item 2") {
         for {
-          item <- ItemRepository.getById(ItemId(2))
+          item <- ItemRepository.getById(ItemId(id2))
         } yield assert(item)(isSome) &&
         assert(item.get.name)(equalTo("second item")) &&
         assert(item.get.price)(equalTo(BigDecimal("2")))
       },
       test("update item 3") {
         for {
-          _    <- ItemRepository.update(ItemId(3), ItemData("updated item", BigDecimal(3)))
-          item <- ItemRepository.getById(ItemId(3))
+          _    <- ItemRepository.update(ItemId(id3), ItemData("updated item", BigDecimal(3)))
+          item <- ItemRepository.getById(ItemId(id3))
         } yield assert(item)(isSome) &&
         assert(item.get.name)(equalTo("updated item")) &&
         assert(item.get.price)(equalTo(BigDecimal(3)))
       },
     ).provideShared(
       containerLayer,
-      DataSourceBuilderLive.layer,
-      dataSourceLayer,
-      postgresLayer,
+      dataSourceBuilderLayer,
       repoLayer,
     ) @@ sequential

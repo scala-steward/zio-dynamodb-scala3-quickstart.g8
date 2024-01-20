@@ -1,6 +1,8 @@
 package scalac.domain
 
-final case class ItemId(value: Long) extends AnyVal
+import java.util.UUID
+
+final case class ItemId(value: UUID) extends AnyVal
 
 final case class ItemData(name: String, price: BigDecimal)
 

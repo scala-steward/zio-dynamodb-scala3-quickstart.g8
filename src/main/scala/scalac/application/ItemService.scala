@@ -2,13 +2,14 @@ package scalac.application
 
 import scalac.domain._
 import zio._
+import java.util.UUID
 
 object ItemService:
 
-  def addItem(name: String, price: BigDecimal): ZIO[ItemRepository, DomainError, ItemId] =
-    ZIO.serviceWithZIO[ItemRepository](_.add(ItemData(name, price)))
+  def addItem(name: String, price: BigDecimal): ZIO[ItemRepository, DomainError, Unit] =
+    ZIO.serviceWithZIO[ItemRepository](_.add(Item(ItemId(UUID.randomUUID()), name, price)))
 
-  def deleteItem(id: ItemId): ZIO[ItemRepository, DomainError, Long] =
+  def deleteItem(id: ItemId): ZIO[ItemRepository, DomainError, Unit] =
     ZIO.serviceWithZIO[ItemRepository](_.delete(id))
 
   def getAllItems(): ZIO[ItemRepository, DomainError, List[Item]] =
@@ -21,12 +22,12 @@ object ItemService:
       id: ItemId,
       name: String,
       price: BigDecimal,
-    ): ZIO[ItemRepository, DomainError, Option[Item]] =
+    ): ZIO[ItemRepository, DomainError, Option[Unit]] =
     for {
-      repo         <- ZIO.service[ItemRepository]
-      data         <- ZIO.succeed(ItemData(name, price))
-      maybeUpdated <- repo.update(id, data)
-    } yield maybeUpdated.map(_ => Item.withData(id, data))
+      repo   <- ZIO.service[ItemRepository]
+      data   <- ZIO.succeed(ItemData(name, price))
+      result <- repo.update(id, data)
+    } yield result
 
   def partialUpdateItem(
       id: ItemId,
@@ -37,5 +38,5 @@ object ItemService:
       repo        <- ZIO.service[ItemRepository]
       currentItem <- repo.getById(id).some
       data         = ItemData(name.getOrElse(currentItem.name), price.getOrElse(currentItem.price))
-      _           <- repo.update(id, data).some
+      _           <- repo.update(id, data).map(Some.apply).some
     } yield Item.withData(id, data)).unsome
