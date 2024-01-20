@@ -85,13 +85,12 @@ final class ItemRepositoryLive(dynamoDbExecutor: DynamoDBExecutor) extends ItemR
 
     }
 
-  private def toItem(dynamoItem: DynamoItem): Item = {
+  private def toItem(dynamoItem: DynamoItem): Item =
     val id: String        = dynamoItem.get[String]("id").fold(error => error.toString(), success => success.toString)
     val name: String      = dynamoItem.get[String]("name").fold(error => error.toString(), success => success.toString)
     val price: BigDecimal = dynamoItem.get[BigDecimal]("price").toOption.get
 
     Item(ItemId(UUID.fromString(id)), name, price)
-  }
 
 object ItemRepositoryLive:
 

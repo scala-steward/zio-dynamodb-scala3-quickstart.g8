@@ -8,14 +8,34 @@ import zio.test.TestAspect._
 import java.util.UUID
 import scalac.infrastructure.dynamodb._
 import scalac.config.Configuration._
+import zio.aws.dynamodb.DynamoDb
+import zio.dynamodb.DynamoDBExecutor
+import zio.aws.core.config.AwsConfig
+import zio.aws.netty.NettyHttpClient
+import java.net.URI
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 
 object ItemRepositoryLiveSpec extends ZIOSpecDefault:
 
-  val containerLayer = ZLayer.scoped(DynamoDbContainer.make())
+  val containerLayer = ZLayer.scoped(DynamoContainer.make())
 
-  val awsConfigLayer         = DataSourceBuilderLive.awsConfigLayer
-  val dynamoDbLayer          = DataSourceBuilderLive.dynamoDbLayer
-  val dataSourceBuilderLayer = DataSourceBuilderLive.dynamoDbExecutorLayer
+  // FIXME: create table on init
+  val dynamoDbLayer: ZLayer[DynamoContainer, Throwable, DynamoDBExecutor] =
+    NettyHttpClient.default
+      >>> AwsConfig.default
+      >>> DynamoDb.customized { builder =>
+        builder
+          .endpointOverride(URI.create(s"http://0.0.0.0:4567"))
+          .region(Region.of("us-east-1"))
+          .credentialsProvider(
+            StaticCredentialsProvider
+              .create(AwsBasicCredentials.create("dummy", "dummy"))
+          )
+
+      }
+      >>> DynamoDBExecutor.live
 
   val repoLayer = ItemRepositoryLive.layer
 
@@ -62,12 +82,7 @@ object ItemRepositoryLiveSpec extends ZIOSpecDefault:
         assert(item.get.price)(equalTo(BigDecimal(3)))
       },
     ).provideShared(
-      // FIXME: add DynamoDbContainer Layer
-      // containerLayer,
-      AWSConfig.layer,
-      DynamoDbConfig.layer,
-      awsConfigLayer,
+      containerLayer,
       dynamoDbLayer,
-      dataSourceBuilderLayer,
       repoLayer,
     ) @@ sequential

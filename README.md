@@ -38,3 +38,11 @@ curl -X POST -H "Content-Type: application/json" -d '{"name": "example-item", "p
 curl -X PUT -H "Content-Type: application/json" -d '{"name": "example-item", "price": 20.99}' http://localhost:8080/items/06cb1888-66be-4fd5-9ecc-bc801f95653f
 
 curl -X DELETE http://localhost:8080/items/a04ca60b-c2df-4396-ba82-908eea51037c
+
+
+## TODO
+- create table during boot
+https://github.com/zio/zio-dynamodb/blob/series/2.x/examples/src/main/scala/zio/dynamodb/examples/dynamodblocal/DynamoDBLocalMain.scala
+
+- zio-http -> openapi -> swagger endpoints
+https://www.youtube.com/watch?v=f8wwS1anL1s&embeds_referring_euri=https%3A%2F%2Fwww.google.com%2Fsearch%3Fq%3Dzio-http%2B%252B%2Bswagger%2Bendpoints%26rlz%3D1C5CHFA_enES1068ES1068%26oq%3Dzio-http%2B%252B%2Bswagger%2Bendpoints%26gs_l&source_ve_path=MjM4NTE&feature=emb_title

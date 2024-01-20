@@ -34,7 +34,7 @@ object DataSourceBuilderLive:
     awsConfig    <- ZLayer.service[AWSConfig]
     dynamoConfig <- ZLayer.service[DynamoDbConfig]
     layer        <-
-      (NettyHttpClient.default)
+      NettyHttpClient.default
         >>> AwsConfig.configured()
         >>> DynamoDb.customized { builder =>
           builder

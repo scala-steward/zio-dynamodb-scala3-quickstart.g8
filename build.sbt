@@ -3,6 +3,7 @@ val zioJsonVersion        = "0.6.2"
 val zioConfigVersion      = "4.0.1"
 val zioLoggingVersion     = "2.1.16"
 val logbackClassicVersion = "1.4.7"
+val awsSdk                = "1.11.479"
 val testContainersVersion = "0.40.15"
 val zioMockVersion        = "1.0.0-RC12"
 val zioHttpVersion        = "3.0.0-RC4"
@@ -38,6 +39,7 @@ lazy val root = (project in file("."))
       "dev.zio"      %% "zio-test-junit"                % zioVersion            % Test,
       "dev.zio"      %% "zio-mock"                      % zioMockVersion        % Test,
       "com.dimafeng" %% "testcontainers-scala-dynalite" % testContainersVersion % Test,
+      "com.amazonaws" % "aws-java-sdk-dynamodb"         % awsSdk                % Test,
       "dev.zio"      %% "zio-test-magnolia"             % zioVersion            % Test,
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
