@@ -1,3 +1,4 @@
+// Dependencies are needed for Scala Steward to check if there are newer versions
 val zioVersion            = "2.0.21"
 val zioJsonVersion        = "0.6.2"
 val zioConfigVersion      = "4.0.1"
@@ -9,39 +10,42 @@ val zioMockVersion        = "1.0.0-RC12"
 val zioHttpVersion        = "3.0.0-RC4"
 val zioDynamodb           = "0.2.13"
 
+// This build is for this Giter8 template.
+// To test the template run `g8` or `g8Test` from the sbt session.
+// See http://www.foundweekends.org/giter8/testing.html#Using+the+Giter8Plugin for more details.
 lazy val root = (project in file("."))
+  .enablePlugins(ScriptedPlugin)
   .settings(
-    inThisBuild(
-      List(
-        organization := "scalac",
-        scalaVersion := "3.3.1",
-      )
+    name           := "zio-dynamodb-scala3-quickstart",
+    Test / test    := {
+      val _ = (Test / g8Test).toTask("").value
+    },
+    scriptedLaunchOpts ++= List(
+      "-Xms1024m",
+      "-Xmx1024m",
+      "-XX:ReservedCodeCacheSize=128m",
+      "-Xss2m",
+      "-Dfile.encoding=UTF-8",
     ),
-    name           := "zio-dynamo-scala3-quickstart",
+    resolvers += Resolver.url(
+      "typesafe",
+      url("https://repo.typesafe.com/typesafe/ivy-releases/"),
+    )(Resolver.ivyStylePatterns),
     libraryDependencies ++= Seq(
-      "dev.zio"       %% "zio-dynamodb"        % zioDynamodb,
-      "dev.zio"       %% "zio"                 % zioVersion,
-      "dev.zio"       %% "zio-streams"         % zioVersion,
-      "dev.zio"       %% "zio-http"            % zioHttpVersion,
-      "dev.zio"       %% "zio-config"          % zioConfigVersion,
-      "dev.zio"       %% "zio-config-typesafe" % zioConfigVersion,
-      "ch.qos.logback" % "logback-classic"     % logbackClassicVersion,
-      "dev.zio"       %% "zio-json"            % zioJsonVersion,
-
-      // logging
-      "dev.zio"       %% "zio-logging"       % zioLoggingVersion,
-      "dev.zio"       %% "zio-logging-slf4j" % zioLoggingVersion,
-      "ch.qos.logback" % "logback-classic"   % logbackClassicVersion,
-
-      // test
-      "dev.zio"      %% "zio-test"                      % zioVersion            % Test,
-      "dev.zio"      %% "zio-test-sbt"                  % zioVersion            % Test,
-      "dev.zio"      %% "zio-test-junit"                % zioVersion            % Test,
-      "dev.zio"      %% "zio-mock"                      % zioMockVersion        % Test,
-      "com.dimafeng" %% "testcontainers-scala-dynalite" % testContainersVersion % Test,
-      "com.amazonaws" % "aws-java-sdk-dynamodb"         % awsSdk                % Test,
-      "dev.zio"      %% "zio-test-magnolia"             % zioVersion            % Test,
+      "dev.zio"       %% "zio-dynamodb"                  % zioDynamodb,
+      "dev.zio"       %% "zio"                           % zioVersion,
+      "dev.zio"       %% "zio-streams"                   % zioVersion,
+      "dev.zio"       %% "zio-http"                      % zioHttpVersion,
+      "dev.zio"       %% "zio-config"                    % zioConfigVersion,
+      "dev.zio"       %% "zio-config-typesafe"           % zioConfigVersion,
+      "ch.qos.logback" % "logback-classic"               % logbackClassicVersion,
+      "dev.zio"       %% "zio-json"                      % zioJsonVersion,
+      "dev.zio"       %% "zio-test"                      % zioVersion,
+      "dev.zio"       %% "zio-test-sbt"                  % zioVersion,
+      "dev.zio"       %% "zio-test-junit"                % zioVersion,
+      "dev.zio"       %% "zio-mock"                      % zioMockVersion,
+      "com.dimafeng"  %% "testcontainers-scala-dynalite" % testContainersVersion,
+      "dev.zio"       %% "zio-test-magnolia"             % zioVersion,
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
   )
-  .enablePlugins(JavaAppPackaging)
