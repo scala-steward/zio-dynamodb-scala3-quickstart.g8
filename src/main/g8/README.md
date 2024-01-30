@@ -18,9 +18,9 @@ aws dynamodb create-table --cli-input-json "$(cat ./src/main/resources/init.json
 
 3/ make sure your table exists and is active:
 ```sh
-aws dynamodb list-tables --endpoint-url http://localhost:8000
+aws dynamodb list-tables --endpoint-url http://localhost:8000 --region us-east-1
 
-aws dynamodb describe-table --table-name Items --endpoint-url http://localhost:8000 --query "Table.RegionName" --output text
+aws dynamodb describe-table --table-name Items --endpoint-url http://localhost:8000 --region us-east-1 --query "Table.RegionName" --output text
 ```
 
 4/ `sbt clean compile`
@@ -33,7 +33,7 @@ curl -X GET localhost:8080/healthcheck
 
 curl -X GET localhost:8080/items
 
-curl -X POST -H "Content-Type: application/json" -d '{"name": "example-item", "price": 19.99}' http://localhost:8080/items
+curl -X POST -H "Content-Type: application/json" -d '{"name": "example-item", "price": 19.99}' http://localhost:8080/items/06cb1888-66be-4fd5-9ecc-bc801f95653f
 
 curl -X PUT -H "Content-Type: application/json" -d '{"name": "example-item", "price": 20.99}' http://localhost:8080/items/06cb1888-66be-4fd5-9ecc-bc801f95653f
 
