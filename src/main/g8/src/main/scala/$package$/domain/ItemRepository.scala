@@ -12,7 +12,7 @@ trait ItemRepository:
 
   def getById(id: ItemId): IO[RepositoryError, Option[Item]]
 
-  def update(itemId: ItemId, data: ItemData): IO[RepositoryError, Option[Unit]]
+  def update(id: ItemId, data: ItemData): IO[RepositoryError, Option[Unit]]
 
 object ItemRepository:
 
@@ -28,5 +28,5 @@ object ItemRepository:
   def getById(id: ItemId): ZIO[ItemRepository, RepositoryError, Option[Item]] =
     ZIO.serviceWithZIO[ItemRepository](_.getById(id))
 
-  def update(itemId: ItemId, data: ItemData): ZIO[ItemRepository, RepositoryError, Option[Unit]] =
-    ZIO.serviceWithZIO[ItemRepository](_.update(itemId, data))
+  def update(id: ItemId, data: ItemData): ZIO[ItemRepository, RepositoryError, Option[Unit]] =
+    ZIO.serviceWithZIO[ItemRepository](_.update(id, data))

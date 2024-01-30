@@ -75,13 +75,13 @@ final class ItemRepositoryLive(dynamoDbExecutor: DynamoDBExecutor) extends ItemR
         case e => RepositoryError(e)
       }
 
-  override def update(itemId: ItemId, data: ItemData): IO[RepositoryError, Option[Unit]] =
-    getById(itemId).either.flatMap {
+  override def update(id: ItemId, data: ItemData): IO[RepositoryError, Option[Unit]] =
+    getById(id).either.flatMap {
       case Left(repositoryError) => ZIO.fail(repositoryError)
       case Right(maybeItem)      =>
         maybeItem match
           case None    => ZIO.succeed(Some(()))
-          case Some(_) => add(Item.withData(itemId, data)).map(Some.apply)
+          case Some(_) => add(Item.withData(id, data)).map(Some.apply)
 
     }
 
