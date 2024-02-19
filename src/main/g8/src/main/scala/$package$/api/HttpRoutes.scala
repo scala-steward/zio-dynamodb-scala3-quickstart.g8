@@ -35,14 +35,14 @@ object HttpRoutes extends JsonSupport:
     Method.DELETE / "items" / string("itemId") -> handler { (itemId: String, _: Request) =>
       val effect: ZIO[ItemRepository, DomainError, String] =
         for {
-          id  <- Utils.extractUUID(itemId)
-          _   <- ItemService.deleteItem(ItemId(id))
+          id <- Utils.extractUUID(itemId)
+          _  <- ItemService.deleteItem(ItemId(id))
         } yield ().toString
 
       effect.foldZIO(Utils.handleError, _.toEmptyResponseZIO)
 
     },
-    Method.POST / "items" / string("itemId")    -> handler { (itemId: String, req: Request) =>
+    Method.POST / "items" / string("itemId")   -> handler { (itemId: String, req: Request) =>
       val effect: ZIO[ItemRepository, DomainError, String] =
         for {
           id         <- Utils.extractUUID(itemId)
@@ -56,12 +56,12 @@ object HttpRoutes extends JsonSupport:
     Method.PUT / "items" / string("itemId")    -> handler { (itemId: String, req: Request) =>
       val effect: ZIO[ItemRepository, DomainError, String] =
         for {
-          id            <- Utils.extractUUID(itemId)
-          updateItem    <- req.jsonBodyAs[UpdateItemRequest]
-          maybeResult   <- ItemService.updateItem(ItemId(id), updateItem.name, updateItem.price)
-          maybeUpdated  <- maybeResult
-                          .map(ZIO.succeed(_))
-                          .getOrElse(ZIO.fail(NotFoundError))
+          id           <- Utils.extractUUID(itemId)
+          updateItem   <- req.jsonBodyAs[UpdateItemRequest]
+          maybeResult  <- ItemService.updateItem(ItemId(id), updateItem.name, updateItem.price)
+          maybeUpdated <- maybeResult
+                            .map(ZIO.succeed(_))
+                            .getOrElse(ZIO.fail(NotFoundError))
         } yield maybeUpdated.toString
 
       effect.foldZIO(Utils.handleError, _.toResponseZIO)

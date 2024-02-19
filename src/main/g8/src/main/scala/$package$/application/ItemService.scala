@@ -6,7 +6,11 @@ import java.util.UUID
 
 object ItemService:
 
-  def addItem(id: ItemId, name: String, price: BigDecimal): ZIO[ItemRepository, DomainError, Unit] =
+  def addItem(
+      id: ItemId,
+      name: String,
+      price: BigDecimal,
+    ): ZIO[ItemRepository, DomainError, Unit] =
     ZIO.serviceWithZIO[ItemRepository](_.add(Item.withData(id, ItemData(name, price))))
 
   def deleteItem(id: ItemId): ZIO[ItemRepository, DomainError, Unit] =
@@ -19,25 +23,24 @@ object ItemService:
     ZIO.serviceWithZIO[ItemRepository](_.getById(id))
 
   def updateItem(
-    id: ItemId,
-    name: String,
-    price: BigDecimal,
-  ): ZIO[ItemRepository, DomainError, Option[Unit]] =
-  for {
-    repo         <- ZIO.service[ItemRepository]
-    data         <- ZIO.succeed(ItemData(name, price))
-    maybeUpdated <- repo.update(id, data)
-  } yield maybeUpdated
+      id: ItemId,
+      name: String,
+      price: BigDecimal,
+    ): ZIO[ItemRepository, DomainError, Option[Unit]] =
+    for {
+      repo         <- ZIO.service[ItemRepository]
+      data         <- ZIO.succeed(ItemData(name, price))
+      maybeUpdated <- repo.update(id, data)
+    } yield maybeUpdated
 
   def partialUpdateItem(
-    id: ItemId,
-    name: Option[String],
-    price: Option[BigDecimal],
-  ): ZIO[ItemRepository, DomainError, Option[Unit]] =
-  (for {
-    repo        <- ZIO.service[ItemRepository]
-    currentItem <- repo.getById(id).some
-    data         = ItemData(name.getOrElse(currentItem.name), price.getOrElse(currentItem.price))
-    _           <- repo.update(id, data).map(Some.apply).some
-  } yield ()).unsome
-
+      id: ItemId,
+      name: Option[String],
+      price: Option[BigDecimal],
+    ): ZIO[ItemRepository, DomainError, Option[Unit]] =
+    (for {
+      repo        <- ZIO.service[ItemRepository]
+      currentItem <- repo.getById(id).some
+      data         = ItemData(name.getOrElse(currentItem.name), price.getOrElse(currentItem.price))
+      _           <- repo.update(id, data).map(Some.apply).some
+    } yield ()).unsome
